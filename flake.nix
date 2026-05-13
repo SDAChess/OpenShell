@@ -41,6 +41,9 @@
           rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
           openshellLibkrunfw = pkgs.callPackage ./nix/libkrunfw.nix { };
+          openshellLibkrun = pkgs.callPackage ./nix/libkrun.nix {
+            libkrunfw = openshellLibkrunfw;
+          };
 
           treefmt = treefmt-nix.lib.evalModule pkgs {
             projectRootFile = "flake.nix";
@@ -50,6 +53,7 @@
         {
           packages = pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
             openshell-libkrunfw = openshellLibkrunfw;
+            openshell-libkrun = openshellLibkrun;
           };
 
           devShells.default = pkgs.mkShell {
