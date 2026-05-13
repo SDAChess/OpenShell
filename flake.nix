@@ -24,36 +24,48 @@
       rust-overlay,
       treefmt-nix,
     }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ rust-overlay.overlays.default ];
-        };
-
-        rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-
-        treefmt = treefmt-nix.lib.evalModule pkgs {
-          projectRootFile = "flake.nix";
-          programs.nixfmt.enable = true;
-        };
-      in
-      {
-        devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            rustToolchain
-            pkg-config
-            llvmPackages.libclang
-            z3
-          ];
-
-          env = {
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+    flake-utils.lib.eachSystem
+      [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ]
+      (
+        system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            overlays = [ rust-overlay.overlays.default ];
           };
-        };
 
-        formatter = treefmt.config.build.wrapper;
-      }
-    );
+          rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+
+          openshellLibkrunfw = pkgs.callPackage ./nix/libkrunfw.nix { };
+
+          treefmt = treefmt-nix.lib.evalModule pkgs {
+            projectRootFile = "flake.nix";
+            programs.nixfmt.enable = true;
+          };
+        in
+        {
+          packages = pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            openshell-libkrunfw = openshellLibkrunfw;
+          };
+
+          devShells.default = pkgs.mkShell {
+            packages = with pkgs; [
+              rustToolchain
+              pkg-config
+              llvmPackages.libclang
+              z3
+            ];
+
+            env = {
+              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            };
+          };
+
+          formatter = treefmt.config.build.wrapper;
+        }
+      );
 }

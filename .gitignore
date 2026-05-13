@@ -218,3 +218,6 @@ rfc.md
 
 # Markdown/mermaid lint tooling deps
 scripts/lint-mermaid/node_modules/
+
+# Nix artifacts
+result
